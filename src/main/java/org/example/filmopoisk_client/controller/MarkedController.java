@@ -1,5 +1,6 @@
 package org.example.filmopoisk_client.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.example.filmopoisk_client.entity.DTO.MarkedFilmRequest;
 import org.example.filmopoisk_client.entity.User;
 import org.example.filmopoisk_client.repository.UserRepository;
@@ -8,11 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/marked")
+@SecurityRequirement(name = "bearerAuth")
 public class MarkedController {
 
     @Autowired
@@ -22,8 +26,13 @@ public class MarkedController {
     private JwtUtil jwtUtil; // Добавляем jwtUtil
 
     @PostMapping("/add")
-    public ResponseEntity<?> addMarkedFilm(@RequestBody MarkedFilmRequest markedFilmRequest, @RequestHeader("Authorization") String token) {
-        String jwt = token.substring(7);
+    public ResponseEntity<?> addMarkedFilm(@RequestBody MarkedFilmRequest markedFilmRequest, HttpServletRequest request) {
+        String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body("Missing or invalid Authorization header");
+        }
+
+        String jwt = authorizationHeader.substring(7);
         Integer userId = jwtUtil.extractUserId(jwt);
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
@@ -41,8 +50,13 @@ public class MarkedController {
     }
 
     @PostMapping("/get")
-    public ResponseEntity<?> getMarkedFilms(@RequestHeader("Authorization") String token) {
-        String jwt = token.substring(7);
+    public ResponseEntity<?> getMarkedFilms(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body("Missing or invalid Authorization header");
+        }
+
+        String jwt = authorizationHeader.substring(7);
         Integer userId = jwtUtil.extractUserId(jwt);
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
@@ -53,21 +67,28 @@ public class MarkedController {
         return ResponseEntity.ok(markedFilms);
     }
 
-    @PostMapping("/get-by-type")
-    public ResponseEntity<?> getMarkedFilmsByType(@RequestBody GetMarkedFilmsByTypeRequest request, @RequestHeader("Authorization") String token) {
-        String jwt = token.substring(7);
-        Integer userId = jwtUtil.extractUserId(jwt);
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            return ResponseEntity.badRequest().body("User not found");
-        }
 
-        List<User.MarkedFilm> markedFilms = user.getMarked().stream()
-                .filter(film -> film.getTypeMarked().equals(request.getTypeMarked()))
-                .collect(Collectors.toList());
+//    @PostMapping("/get-by-type")
+//    public ResponseEntity<?> getMarkedFilmsByType(@RequestBody GetMarkedFilmsByTypeRequest request, HttpServletRequest request) {
+//        String authorizationHeader = request.getHeader("Authorization");
+//        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+//            return ResponseEntity.badRequest().body("Missing or invalid Authorization header");
+//        }
+//
+//        String jwt = authorizationHeader.substring(7);
+//        Integer userId = jwtUtil.extractUserId(jwt);
+//        User user = userRepository.findById(userId).orElse(null);
+//        if (user == null) {
+//            return ResponseEntity.badRequest().body("User not found");
+//        }
+//
+//        List<User.MarkedFilm> markedFilms = user.getMarked().stream()
+//                .filter(film -> film.getTypeMarked().equals(request.getTypeMarked()))
+//                .collect(Collectors.toList());
+//
+//        return ResponseEntity.ok(markedFilms);
+//    }
 
-        return ResponseEntity.ok(markedFilms);
-    }
 
 
     // Вспомогательный класс для запроса по типу
