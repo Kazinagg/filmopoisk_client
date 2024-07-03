@@ -68,54 +68,34 @@ public class MarkedController {
         return ResponseEntity.ok(markedFilms);
     }
 
-//    @PostMapping("/remove")
-//    public ResponseEntity<?> getMarkedFilms(HttpServletRequest request) {
-//
-//    }
-
-
-//    @PostMapping("/get-by-type")
-//    public ResponseEntity<?> getMarkedFilmsByType(@RequestBody GetMarkedFilmsByTypeRequest request, HttpServletRequest request) {
-//        String authorizationHeader = request.getHeader("Authorization");
-//        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-//            return ResponseEntity.badRequest().body("Missing or invalid Authorization header");
-//        }
-//
-//        String jwt = authorizationHeader.substring(7);
-//        Integer userId = jwtUtil.extractUserId(jwt);
-//        User user = userRepository.findById(userId).orElse(null);
-//        if (user == null) {
-//            return ResponseEntity.badRequest().body("User not found");
-//        }
-//
-//        List<User.MarkedFilm> markedFilms = user.getMarked().stream()
-//                .filter(film -> film.getTypeMarked().equals(request.getTypeMarked()))
-//                .collect(Collectors.toList());
-//
-//        return ResponseEntity.ok(markedFilms);
-//    }
-
-
-
-    // Вспомогательный класс для запроса по типу
-    public static class GetMarkedFilmsByTypeRequest {
-        private Integer userId;
-        private Integer typeMarked;
-
-        public Integer getUserId() {
-            return userId;
+    @PostMapping("/remove")
+    public ResponseEntity<?> removeMarkedFilm(@RequestBody MarkedFilmRequest markedFilmRequest, HttpServletRequest request) {
+        String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body("Missing or invalid Authorization header");
         }
 
-        public void setUserId(Integer userId) {
-            this.userId = userId;
+        String jwt = authorizationHeader.substring(7);
+        Integer userId = jwtUtil.extractUserId(jwt);
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return ResponseEntity.badRequest().body("User not found");
         }
 
-        public Integer getTypeMarked() {
-            return typeMarked;
+        User.MarkedFilm markedFilmToRemove = user.getMarked().stream()
+                .filter(markedFilm -> markedFilm.getKinopoiskId().equals(markedFilmRequest.getKinopoiskId()))
+                .findFirst()
+                .orElse(null);
+
+        if (markedFilmToRemove == null) {
+            return ResponseEntity.badRequest().body("Marked film not found");
         }
 
-        public void setTypeMarked(Integer typeMarked) {
-            this.typeMarked = typeMarked;
-        }
+        user.getMarked().remove(markedFilmToRemove);
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Marked film removed successfully");
     }
+
+
 }
