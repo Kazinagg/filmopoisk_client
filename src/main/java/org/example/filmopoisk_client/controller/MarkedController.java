@@ -51,21 +51,27 @@ public class MarkedController {
 
     @PostMapping("/get")
     public ResponseEntity<?> getMarkedFilms(HttpServletRequest request) {
+        System.out.println(request);
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             return ResponseEntity.badRequest().body("Missing or invalid Authorization header");
         }
-
+        System.out.println(request);
         String jwt = authorizationHeader.substring(7);
         Integer userId = jwtUtil.extractUserId(jwt);
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
-            return ResponseEntity.badRequest().body("User not found");
+            return ResponseEntity.badRequest().body("User not found 63");
         }
 
         List<User.MarkedFilm> markedFilms = user.getMarked();
         return ResponseEntity.ok(markedFilms);
     }
+
+//    @PostMapping("/remove")
+//    public ResponseEntity<?> getMarkedFilms(HttpServletRequest request) {
+//
+//    }
 
 
 //    @PostMapping("/get-by-type")

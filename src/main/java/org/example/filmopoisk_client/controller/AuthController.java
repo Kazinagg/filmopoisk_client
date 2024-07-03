@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -49,15 +51,22 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
+//        System.out.println(loginRequest.getPassword());
+//        System.out.println(loginRequest.getEmail());
         User user = userRepository.findByEmail(loginRequest.getEmail());
         if (user == null || !passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             return ResponseEntity.badRequest().body("Invalid email or password");
         }
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
-        );
-
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+            );
+            System.out.println("Аутентификация успешна: " + auth.isAuthenticated());
+        } catch (AuthenticationException e) {
+            System.out.println("Ошибка аутентификации: " + e.getMessage());
+        }
+        System.out.println("user");
         final String jwt = jwtUtil.generateToken(userDetailsService.loadUserByUsername(loginRequest.getEmail()), user.getId());
         return ResponseEntity.ok(jwt);
     }
